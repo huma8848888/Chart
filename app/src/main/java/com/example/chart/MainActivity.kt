@@ -27,27 +27,21 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
+        var yAxisLableList: List<String> = listOf("1", "2", "3", "4", "5", "6")
+        var xAxisLableList: List<String> = listOf("六", "日", "一", "二", "三", "四", "今")
+        var barDataList: List<BarDataBean> = listOf(
+                BarDataBean(30, 20, 50),
+                BarDataBean(60, 20, 30),
+                BarDataBean(40, 30, 50),
+                BarDataBean(30, 20, 50),
+                BarDataBean(60, 20, 40),
+                BarDataBean(40, 30, 20),
+                BarDataBean(10, 20, 30)
+        )
+//        binding.chart.setDataList(yAxisLableList, xAxisLableList, barDataList)
+//        binding.chart.post { binding.chart.setDataList(yAxisLableList, xAxisLableList, barDataList) }
         binding.button.setOnClickListener {
-            runOnUiThread {
-                binding.chart.invalidate()
-            }
-        }
-        binding.chart.post {
-            var yAxisLableList: List<String> = listOf("1", "2", "3", "4", "5", "6")
-            var xAxisLableList: List<String> = listOf("六", "日", "一", "二", "三", "四", "今")
-            var barDataList: List<BarDataBean> = listOf(
-                    BarDataBean(30, 20, 50),
-                    BarDataBean(60, 20, 30),
-                    BarDataBean(40, 30, 50),
-                    BarDataBean(30, 20, 50),
-                    BarDataBean(60, 20, 40),
-                    BarDataBean(40, 30, 20),
-                    BarDataBean(10, 20, 30)
-            )
             binding.chart.setDataList(yAxisLableList, xAxisLableList, barDataList)
-        }
-        binding.fab.setOnClickListener { view ->
-           binding.chart.invalidate()
         }
     }
 

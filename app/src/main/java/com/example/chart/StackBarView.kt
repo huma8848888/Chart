@@ -12,14 +12,16 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.example.chart.databinding.LayoutBarBinding
 
-data class BarDataBean(val content_duration: Long, val app_duration: Long, val other_duration: Long)
+data class BarDataBean(val pad_duration: Long, val app_duration: Long, val other_duration: Long)
+data class BarLayoutParam(val pad_height : Int, val app_height : Int, val other_height : Int, val left: Int, val top: Int, val right: Int, val bottom: Int)
 
 class StackBarView : FrameLayout {
     private var textSize: Float = 0.0f
     var yAxisLableList: List<String> = emptyList()
     var xAxisLableList: List<String> = emptyList()
     var barDataList: List<BarDataBean> = emptyList()
-    var barViewList: List<LinearLayout> = emptyList()
+    var barViewList = arrayListOf<LinearLayout>()
+    var barLayoutParamList = arrayListOf<BarLayoutParam>()
 
 
     //y轴标签paint
@@ -63,7 +65,6 @@ class StackBarView : FrameLayout {
         dashLinePaint.strokeWidth = DensityUtil.dp2px(context, 1.0f).toFloat()
         //设置虚线效果
         dashLinePaint.pathEffect = DashPathEffect(floatArrayOf(DensityUtil.dp2px(context, 2.0f).toFloat(), DensityUtil.dp2px(context, 2.0f).toFloat()), 0f)
-
         barWidth = DensityUtil.dp2px(context, 20.0f).toFloat()
     }
 
@@ -71,6 +72,13 @@ class StackBarView : FrameLayout {
         this.yAxisLableList = yAxisLableList
         this.xAxisLableList = xAxisLableList
         this.barDataList = barData
+        barViewList.clear()
+        removeAllViews()
+        xAxisLableList.forEachIndexed { index, lable ->
+            val barViewBinding = LayoutBarBinding.inflate(LayoutInflater.from(context), this, false)
+            barViewList.add(barViewBinding.root)
+            addView(barViewBinding.root)
+        }
         invalidate()
     }
 
@@ -86,8 +94,27 @@ class StackBarView : FrameLayout {
         drawXAxisLableAndBar(canvas)
     }
 
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        Log.d("test", "onMeasure")
+    }
+
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        //禁止布局，由ondraw来绘制
+        super.onLayout(changed, left, top, right, bottom)
+        Log.d("test", "onLayout")
+        if (barViewList.isNotEmpty() && barLayoutParamList.isNotEmpty()){
+            barViewList.forEachIndexed { index, itemView ->
+                val barItemViewLayoutParam = barLayoutParamList[index]
+                val otherView = itemView.findViewById<RoundFrameLayout>(R.id.other)
+                otherView.layoutParams = LinearLayout.LayoutParams(barWidth.toInt(), barItemViewLayoutParam.other_height)
+                val padView = itemView.findViewById<FrameLayout>(R.id.pad)
+                padView.layoutParams = LinearLayout.LayoutParams(barWidth.toInt(), barItemViewLayoutParam.pad_height)
+                val appView = itemView.findViewById<FrameLayout>(R.id.app)
+                appView.layoutParams = LinearLayout.LayoutParams(barWidth.toInt(), barItemViewLayoutParam.app_height)
+                itemView.measure(0, 0)
+                itemView.layout(barItemViewLayoutParam.left, barItemViewLayoutParam.top, barItemViewLayoutParam.right, barItemViewLayoutParam.bottom)
+            }
+        }
     }
 
     //计算bar区的高度，并且计算时间和高度的换算比率
@@ -95,7 +122,7 @@ class StackBarView : FrameLayout {
         val totalHeightForBar = bottomDashLineY - topDashLineY
         var maxTotalTime = Integer.MIN_VALUE.toLong()
         barDataList.forEach { beanItem ->
-            val currTime = beanItem.app_duration + beanItem.content_duration + beanItem.other_duration
+            val currTime = beanItem.app_duration + beanItem.pad_duration + beanItem.other_duration
             if (currTime > maxTotalTime) {
                 maxTotalTime = currTime
             }
@@ -192,10 +219,10 @@ class StackBarView : FrameLayout {
         var linearLayoutItem = LayoutBarBinding.inflate(LayoutInflater.from(context), this, false)
         val otherHeight = item.other_duration * heightRation
         val appHeight = item.app_duration * heightRation
-        val contentHeight = item.content_duration * heightRation
+        val padHeight = item.pad_duration * heightRation
         linearLayoutItem.other.layoutParams = LinearLayout.LayoutParams(barWidth.toInt(), otherHeight.toInt())
         linearLayoutItem.app.layoutParams = LinearLayout.LayoutParams(barWidth.toInt(), appHeight.toInt())
-        linearLayoutItem.pad.layoutParams = LinearLayout.LayoutParams(barWidth.toInt(), contentHeight.toInt())
+        linearLayoutItem.pad.layoutParams = LinearLayout.LayoutParams(barWidth.toInt(), padHeight.toInt())
         linearLayoutItem.root.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
         barWidth = linearLayoutItem.root.measuredWidth.toFloat()
         val barXBias = Math.abs((textWidth - barWidth) / 2f)
@@ -203,8 +230,9 @@ class StackBarView : FrameLayout {
         val top = (textY - textSize - textTop2BarBottomHeight - linearLayoutItem.root.measuredHeight).toInt()
         val right = (textX + textSize + barXBias).toInt()
         val bottom = (textY - textSize - textTop2BarBottomHeight).toInt()
-        linearLayoutItem.root.layout(left, top, right, bottom)
-        barViewList.plus(linearLayoutItem)
-        addView(linearLayoutItem.root)
+        barLayoutParamList.add(BarLayoutParam(padHeight.toInt(), appHeight.toInt(), otherHeight.toInt(), left, top, right, bottom))
+//        linearLayoutItem.root.layout(left, top, right, bottom)
+//        barViewList.plus(linearLayoutItem)
+//        addView(linearLayoutItem.root)
     }
 }
